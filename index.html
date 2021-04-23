@@ -15,7 +15,6 @@
 
     function getData () {
 		let url = "https://demo.orthanc-server.com/dicom-web/studies/1.2.840.113745.101000.1008000.38048.4626.5933732/series/1.3.12.2.1107.5.1.4.36085.4.0.13457320123409917/instances/1.3.12.2.1107.5.1.4.36085.4.0.13457333828791339";
-		//"http://orthanc.dicom.tw/dicom-web/studies/2.16.840.1.113995.3.110.3.0.10118.2000002.278819.649182/series/2.16.840.1.113995.3.110.3.0.10118.2000002.862753/instances/2.16.840.1.113995.3.110.3.0.10118.2000002.862753.1"
         fetch(url , {
             headers: {
                 'user-agent': 'Mozilla/4.0 MDN Example',
@@ -26,53 +25,33 @@
             let resBlob = await res.arrayBuffer();
             let intArray = new Uint8Array(resBlob);
             let resString = '';
+            //convert array buffer to string
             for (let i = 0; i < intArray.length ; i++) {
-                //console.log(resBlob[i]);
                 resString += String.fromCodePoint(intArray[i]);
             }
-            
-            //console.log(bops.to(resBlob, encoding="binary"))
-            //let item = await resBlob.text();
-            await parseMultipartRelated(string);
+            await parseMultipartRelated(resString);
         })
         .catch(function (err) {
             console.log(err);
         })
     }
 async function parseMultipartRelated(iData) {
-    console.log(iData);
-    
-    //req.body= req.body.toString('binary');
     let multipartMessage = iData;
-    //let boundary = req.headers["content-type"].split("boundary=")[1];
     let startBoundary = multipartMessage.split("\r\n")[0];
-    //let startBoundary = `--${boundary}`;
     let matches = multipartMessage.matchAll(new RegExp(startBoundary , "gi"));
     let fileEndIndex = [];
     let fileStartIndex = [];
+    //get all data end index (The end index is before boundary)
     for (let match of matches) {
         fileEndIndex.push(match.index-2);
     }
+    //remove start boundary index
     fileEndIndex = fileEndIndex.slice(1);
     let data = multipartMessage.split("\r\n");
-    let filename = [];
     let files = [];
-    let contentDispositionList = [];
-    let contentTypeList = [];
-    for (let i in data) {
-        let text = data[i];
-        if (text.includes("Content-Disposition")) {
-            contentDispositionList.push(text);
-            let textSplitFileName = text.split("filename=")
-            filename.push(textSplitFileName[textSplitFileName.length-1].replace(/"/gm , ""));
-        } else if (text.includes("Content-Type")) {
-            contentTypeList.push(text);
-        }
-    }
-    contentDispositionList = _.uniq(contentDispositionList);
-    contentTypeList = _.uniq(contentTypeList);
-    let teststring = ["Content-Type" , "Content-Length" , "MIME-Version"]
-    let matchesIndex = []
+    let teststring = ["Content-Type" , "Content-Length" , "MIME-Version"];
+    let matchesIndex = [];
+    //temp headers index
     for (let type of teststring) {
         let contentTypeMatches = multipartMessage.matchAll(new RegExp(`${type}.*[\r\n|\r|\n]$` , "gim"));
         for (let match of contentTypeMatches) {
@@ -81,17 +60,19 @@ async function parseMultipartRelated(iData) {
                 length : match['0'].length
             })
         }
-        // //+4 
     }
+    //get last header index
     let maxIndex = _.maxBy(matchesIndex , "index");
+    //push the data start index (after last header)
     fileStartIndex.push(maxIndex.index + maxIndex.length + 3);
     console.log(fileStartIndex);
+
+    //get all data
     for (let i in fileEndIndex) {
         let fileData = multipartMessage.substring(fileStartIndex[i] , fileEndIndex[i]);
-        console.log(fileData);
+        //console.log(fileData);
         files.push(fileData);
     }
-    console.log("Upload Files complete");
     function str2ab(str) {
         var buf = new ArrayBuffer(str.length); // 2 bytes for each char
         var bufView = new Uint8Array(buf);
@@ -100,8 +81,9 @@ async function parseMultipartRelated(iData) {
         }
         return buf;
     }
+    //convert string to arraybuffer
     let buf = str2ab(files[0]);
-    console.log(buf);
+    //download the DICOM file
     var a = document.createElement("a"),
         url = URL.createObjectURL(new Blob([buf] , {type : "application/dicom"}));
     a.href = url;
@@ -112,7 +94,5 @@ async function parseMultipartRelated(iData) {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);  
     }, 0); 
-    
-    return {files : files , filename : filename};
 }
 </script>
