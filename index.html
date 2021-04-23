@@ -65,8 +65,6 @@ async function parseMultipartRelated(iData) {
     let maxIndex = _.maxBy(matchesIndex , "index");
     //push the data start index (after last header)
     fileStartIndex.push(maxIndex.index + maxIndex.length + 3);
-    console.log(fileStartIndex);
-
     //get all data
     for (let i in fileEndIndex) {
         let fileData = multipartMessage.substring(fileStartIndex[i] , fileEndIndex[i]);
