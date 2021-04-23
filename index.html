@@ -25,10 +25,10 @@
         .then(async function (res) {
             let resBlob = await res.arrayBuffer();
             let intArray = new Uint8Array(resBlob);
-            var string = '';
+            let resString = '';
             for (let i = 0; i < intArray.length ; i++) {
                 //console.log(resBlob[i]);
-                string += String.fromCodePoint(intArray[i]);
+                resString += String.fromCodePoint(intArray[i]);
             }
             
             //console.log(bops.to(resBlob, encoding="binary"))
